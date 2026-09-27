@@ -15,8 +15,8 @@ testes     = ["python", "-m", "unittest", "-v", "test_pedidos"]
 gatilho    = { push = "main" }
 
 [funcao.ambiente]
-PUBSUB_TOPICO = "projects/PROJETO/topics/tilt-demo-pedidos"
-GCP_CHAVE     = "cofre:producao.pubsub_chave"
+PUBSUB_TOPICO = "projects/tilt-examples/topics/tilt-demo-pedidos"
+GCP_CHAVE     = "cofre:gcp-pubsub.pubsub_chave"
 
 [mapreduce]
 split  = { tipo = "by-count", n = 1 }
