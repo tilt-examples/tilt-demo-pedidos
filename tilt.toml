@@ -1,18 +1,18 @@
 # Receita da funcao distribuida de pedidos (lida pela Tilt, nunca escrita por IA).
-# Ao conectar, cada maquina com container constroi a imagem; um push em `main` prepara de novo.
-# Cada pedido (ou bloco de pedidos) vira uma parte, que uma maquina puxa e executa na imagem.
+# A funcao e UM arquivo JavaScript, sem dependencias: a Tilt le o arquivo no commit e cada maquina
+# com o conector (Windows ou Linux) o roda com o proprio Node -- sem imagem, sem preparacao.
+# Cada pedido (ou bloco de pedidos) vira uma parte, que uma maquina puxa e executa.
 
 [cartucho]
 id     = "demo-pedidos"
 nome   = "Pedidos -- valida e publica no Google Pub/Sub"
-versao = "1.0.0"
+versao = "2.0.0"
 modo   = "funcao"
 
 [funcao]
-dockerfile = "app/Dockerfile.funcao"
-contexto   = "app"
-testes     = ["python", "-m", "unittest", "-v", "test_pedidos"]
-gatilho    = { push = "main" }
+runtime = "node"
+arquivo = "funcao.mjs"
+gatilho = { push = "main" }
 
 [funcao.ambiente]
 PUBSUB_TOPICO = "projects/tilt-examples/topics/tilt-demo-pedidos"
