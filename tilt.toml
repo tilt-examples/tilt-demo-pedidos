@@ -1,0 +1,58 @@
+# Receita da demo de pedidos (lida pela Tilt, nunca escrita por IA).
+# Um push em `main` testa as regras nas maquinas ociosas e publica o servico na grade.
+
+[cartucho]
+id     = "demo-pedidos"
+nome   = "Pedidos -- valida e publica no Google Pub/Sub"
+versao = "1.0.0"
+modo   = "pipeline"
+
+[mapreduce]
+split  = { tipo = "none" }
+reduce = { tipo = "manifest" }
+
+[recursos]
+memory_max_mb = 1024
+deadline_secs = 900
+
+[entrada]
+extensoes         = [".toml"]
+max_arquivos      = 1
+max_arquivo_bytes = 1048576
+max_lote_bytes    = 1048576
+
+[pipeline]
+gatilho = { push = "main" }
+
+[[pipeline.etapa]]
+nome       = "build"
+titulo     = "Construir o servico"
+descricao  = "Monta a imagem Python com a biblioteca oficial do Google Pub/Sub."
+tool       = "container"
+acao       = "build"
+dockerfile = "app/Dockerfile"
+contexto   = "app"
+
+[[pipeline.etapa]]
+nome       = "testar"
+titulo     = "Testar as regras do pedido"
+descricao  = "Roda os testes de validacao e do fluxo de publicacao dentro da imagem."
+depende_de = ["build"]
+tool       = "container"
+acao       = "run"
+imagem_de  = "build"
+comando    = ["python", "-m", "unittest", "-v", "test_pedidos"]
+
+[[pipeline.etapa]]
+nome       = "publicar"
+titulo     = "Publicar o servico de pedidos"
+descricao  = "Sobe o servico numa maquina da grade e confere se responde."
+depende_de = ["testar"]
+tool       = "container"
+acao       = "serve"
+imagem_de  = "build"
+porta      = 8080
+saude      = "/saude"
+url        = "http://212.28.186.240:8080"
+destino    = { maquina = "Tilt 04" }
+estrategia = "substituir"
