@@ -37,6 +37,8 @@ A mensagem publicada é o próprio JSON do pedido, com os atributos `pedido`, `o
 ## Configuração (o `tilt.toml`)
 
 - `PUBSUB_TOPICO`: `projects/<projeto>/topics/<tópico>`.
+- `PUBSUB_ENDPOINT` e `TILT_CHAVE`: quando a máquina não alcança o Google, a publicação passa pelo relé
+  da Tilt, autenticada pela chave de API da Tilt guardada no cofre (`tilt_chave`).
 - `GCP_CHAVE`: o JSON da conta de serviço (só permissão de publicar), entregue pela Tilt a partir do
   cofre de segredos. Nunca no código nem no repositório.
 

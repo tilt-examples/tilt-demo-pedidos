@@ -187,6 +187,32 @@ test("o publicador chama o endpoint de publish do tópico e devolve o messageId"
   assert.deepEqual(corpo.messages[0].attributes, { pedido: "9000000001" });
 });
 
+test("PUBSUB_ENDPOINT troca o endereço pelo relé da Tilt, e TILT_CHAVE vai no cabeçalho X-Tilt-Chave", async () => {
+  const chamadas = [];
+  const buscar = async (url, init) => {
+    chamadas.push([url, init]);
+    return { ok: true, status: 200, json: async () => ({ messageIds: ["1"] }) };
+  };
+  const publicar = publicadorDoGoogle(
+    {
+      GCP_CHAVE: JSON.stringify(CONTA),
+      PUBSUB_TOPICO: "projects/p/topics/t",
+      PUBSUB_ENDPOINT: "https://console-api.tilt.tools/api/v1/rele/pubsub/",
+      TILT_CHAVE: "tilt_sk_abc",
+    },
+    buscar,
+  );
+  await publicar("{}", {});
+  assert.equal(chamadas[0][0], "https://console-api.tilt.tools/api/v1/rele/pubsub/v1/projects/p/topics/t:publish");
+  assert.equal(chamadas[0][1].headers["X-Tilt-Chave"], "tilt_sk_abc");
+  assert.match(chamadas[0][1].headers.Authorization, /^Bearer ey/);
+  // Sem TILT_CHAVE: nem o cabeçalho, nem o relé -- o Google direto, como antes.
+  const direto = publicadorDoGoogle({ GCP_CHAVE: JSON.stringify(CONTA), PUBSUB_TOPICO: "projects/p/topics/t" }, buscar);
+  await direto("{}", {});
+  assert.equal(chamadas[1][0], "https://pubsub.googleapis.com/v1/projects/p/topics/t:publish");
+  assert.equal("X-Tilt-Chave" in chamadas[1][1].headers, false);
+});
+
 test("resposta de erro do Google vira exceção com o status dele", async () => {
   const buscar = async () => ({
     ok: false,

@@ -212,11 +212,22 @@ export function jwtDaContaDeServico(conta, agora = Math.floor(Date.now() / 1000)
 }
 
 /** O publicador de verdade, ou null quando a credencial ou o tópico não foram entregues. */
+export const ENDPOINT_PADRAO_DO_PUBSUB = "https://pubsub.googleapis.com";
+
+/**
+ * O publicador de verdade, ou null quando a credencial ou o tópico não foram entregues.
+ *
+ * `PUBSUB_ENDPOINT` troca o endereço do Google pelo relé da Tilt (S-0321) quando a máquina só
+ * alcança a Tilt; `TILT_CHAVE` é a chave de API da Tilt que o relé exige, e vai no cabeçalho
+ * `X-Tilt-Chave`. O JWT do Google continua indo em `Authorization`, assinado aqui.
+ */
 export function publicadorDoGoogle(ambiente = process.env, buscar = fetch) {
   const chave = (ambiente.GCP_CHAVE ?? "").trim();
   const topico = (ambiente.PUBSUB_TOPICO ?? "").trim();
   if (!chave || !topico) return null;
   const conta = JSON.parse(chave);
+  const endpoint = (ambiente.PUBSUB_ENDPOINT ?? "").trim().replace(/\/+$/, "") || ENDPOINT_PADRAO_DO_PUBSUB;
+  const chaveDaTilt = (ambiente.TILT_CHAVE ?? "").trim();
   let jwt = null;
   let jwtVenceEm = 0;
   return async function publicar(dados, atributos) {
@@ -225,9 +236,13 @@ export function publicadorDoGoogle(ambiente = process.env, buscar = fetch) {
       jwt = jwtDaContaDeServico(conta, agora);
       jwtVenceEm = agora + 3600;
     }
-    const resposta = await buscar(`https://pubsub.googleapis.com/v1/${topico}:publish`, {
+    const resposta = await buscar(`${endpoint}/v1/${topico}:publish`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        "Content-Type": "application/json",
+        ...(chaveDaTilt ? { "X-Tilt-Chave": chaveDaTilt } : {}),
+      },
       body: JSON.stringify({ messages: [{ data: Buffer.from(dados).toString("base64"), attributes: atributos }] }),
       signal: AbortSignal.timeout(PRAZO_DA_PUBLICACAO_MS),
     });
